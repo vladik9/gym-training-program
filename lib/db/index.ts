@@ -6,7 +6,11 @@ const sqlite = new Database("gym-app.db")
 export const db = drizzle(sqlite, { schema })
 
 // Initialize database with tables
+let isDatabaseInitialized = false;
 export function initializeDatabase() {
+  if (isDatabaseInitialized) {
+    return;
+  }
   // Create tables if they don't exist
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -79,7 +83,50 @@ export function initializeDatabase() {
       tips TEXT,
       created_at INTEGER NOT NULL DEFAULT (unixepoch())
     );
+
+    CREATE TABLE IF NOT EXISTS programs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      type TEXT NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
+    CREATE TABLE IF NOT EXISTS weeks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      program_id INTEGER NOT NULL,
+      week_number INTEGER NOT NULL,
+      description TEXT,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS workout_days (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      week_id INTEGER NOT NULL,
+      day_name TEXT NOT NULL,
+      focus TEXT NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      FOREIGN KEY (week_id) REFERENCES weeks(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS workout_day_exercises (
+      workout_day_id INTEGER NOT NULL,
+      exercise_id INTEGER NOT NULL,
+      sets TEXT NOT NULL,
+      notes TEXT,
+      "order" INTEGER NOT NULL,
+      FOREIGN KEY (workout_day_id) REFERENCES workout_days(id) ON DELETE CASCADE,
+      FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+      PRIMARY KEY (workout_day_id, exercise_id, "order")
+    );
   `)
 
   console.log("[v0] Database initialized successfully")
+  isDatabaseInitialized = true;
 }
+
+initializeDatabase(); // Call it once when the module is loaded

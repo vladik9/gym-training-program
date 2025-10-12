@@ -2,7 +2,8 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { homeProgram, Exercise } from "@/lib/home-workouts"
+import { getAllPrograms, getWeekByProgramIdAndWeekNumber, getWorkoutDayByWeekIdAndDayName, getExercisesForWorkoutDay } from "@/lib/db/queries"
+import { Program, Week, WorkoutDay, Exercise } from "@/lib/db/schema"
 import { Home, ArrowLeft } from "lucide-react"
 
 interface DayPageProps {
@@ -14,14 +15,35 @@ interface DayPageProps {
 
 export default async function HomeDayPage({ params }: DayPageProps) {
   const weekNumber = parseInt(params.weekId.replace('week-', ''))
-  console.log("Day Page - Parsed weekNumber:", weekNumber)
-  const dayName = params.dayId.replace('day-', '').replace(/-/g, " ") // Extract day and convert hyphens to spaces
-  console.log("Day Page - Parsed dayName:", dayName)
+  const dayName = params.dayId.replace('day-', '').replace(/-/g, " ")
 
-  const weekData = homeProgram.find((week) => week.week === weekNumber)
-  console.log("Day Page - Found weekData:", weekData)
-  const workoutDay = weekData?.workouts.find((workout) => workout.day.toLowerCase() === dayName)
-  console.log("Day Page - Found workoutDay:", workoutDay)
+  const programs = await getAllPrograms()
+  const homeProgram = programs.find(p => p.type === "home")
+
+  if (!homeProgram) {
+    return (
+      <div className="min-h-screen bg-background py-12 px-4 text-center">
+        <h1 className="text-4xl font-bold">Home Training Program Not Found</h1>
+        <p className="text-muted-foreground mt-4">Please ensure the home program is seeded in the database.</p>
+      </div>
+    )
+  }
+
+  const week: Week | undefined = await getWeekByProgramIdAndWeekNumber(homeProgram.id, weekNumber)
+
+  if (!week) {
+    return (
+      <div className="min-h-screen bg-background py-12 px-4 text-center">
+        <h1 className="text-4xl font-bold">Week {weekNumber} Not Found</h1>
+        <p className="text-muted-foreground mt-4">Please select a valid week from the program.</p>
+        <Button asChild className="mt-6">
+          <Link href={`/home-training/week-${weekNumber}`}>Back to Week {weekNumber}</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  const workoutDay: (WorkoutDay & { exercises: Exercise[] }) | undefined = await getWorkoutDayByWeekIdAndDayName(week.id, dayName)
 
   if (!workoutDay) {
     return (
@@ -35,11 +57,13 @@ export default async function HomeDayPage({ params }: DayPageProps) {
     )
   }
 
+  workoutDay.exercises = await getExercisesForWorkoutDay(workoutDay.id)
+
   return (
     <div className="min-h-screen bg-background py-12 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-black mb-4 text-balance">WEEK {weekNumber} - {workoutDay.day.toUpperCase()}</h1>
+          <h1 className="text-5xl md:text-6xl font-black mb-4 text-balance">WEEK {weekNumber} - {workoutDay.dayName.toUpperCase()}</h1>
           <p className="text-xl text-muted-foreground mb-6 text-balance">
             Focus: {workoutDay.focus}
           </p>

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core"
+import { sqliteTable, text, integer, real, primaryKey } from "drizzle-orm/sqlite-core"
 import { sql } from "drizzle-orm"
 
 // Users table
@@ -96,3 +96,78 @@ export type PasswordResetToken = typeof passwordResetTokens.$inferSelect
 export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert
 export type Exercise = typeof exercises.$inferSelect
 export type NewExercise = typeof exercises.$inferInsert
+
+// Programs table
+export const programs = sqliteTable("programs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // 'gym' or 'home'
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+})
+
+// Weeks table
+export const weeks = sqliteTable("weeks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  programId: integer("program_id")
+    .notNull()
+    .references(() => programs.id, { onDelete: "cascade" }),
+  weekNumber: integer("week_number").notNull(),
+  description: text("description"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+})
+
+// Workout Days table
+export const workoutDays = sqliteTable("workout_days", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  weekId: integer("week_id")
+    .notNull()
+    .references(() => weeks.id, { onDelete: "cascade" }),
+  dayName: text("day_name").notNull(), // e.g., 'Monday', 'Wednesday'
+  focus: text("focus").notNull(), // e.g., 'Legs', 'Chest, Biceps, Shoulders'
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+})
+
+// Junction table for WorkoutDay and Exercise (many-to-many)
+export const workoutDayExercises = sqliteTable("workout_day_exercises", {
+  workoutDayId: integer("workout_day_id")
+    .notNull()
+    .references(() => workoutDays.id, { onDelete: "cascade" }),
+  exerciseId: integer("exercise_id")
+    .notNull()
+    .references(() => exercises.id, { onDelete: "cascade" }),
+  sets: text("sets").notNull(),
+  notes: text("notes"),
+  order: integer("order").notNull(), // To maintain exercise order within a day
+}, (table) => {
+  return {
+    pk: primaryKey({ columns: [table.workoutDayId, table.exerciseId, table.order] }),
+  }
+})
+
+// Types for TypeScript
+export type User = typeof users.$inferSelect
+export type NewUser = typeof users.$inferInsert
+export type UserProgress = typeof userProgress.$inferSelect
+export type NewUserProgress = typeof userProgress.$inferInsert
+export type WorkoutLog = typeof workoutLogs.$inferSelect
+export type NewWorkoutLog = typeof workoutLogs.$inferInsert
+export type UserPreference = typeof userPreferences.$inferSelect
+export type NewUserPreference = typeof userPreferences.$inferInsert
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect
+export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert
+export type Exercise = typeof exercises.$inferSelect
+export type NewExercise = typeof exercises.$inferInsert
+
+export type Program = typeof programs.$inferSelect
+export type NewProgram = typeof programs.$inferInsert
+export type Week = typeof weeks.$inferSelect
+export type NewWeek = typeof weeks.$inferInsert
+export type WorkoutDay = typeof workoutDays.$inferSelect
+export type NewWorkoutDay = typeof workoutDays.$inferInsert
+export type WorkoutDayExercise = typeof workoutDayExercises.$inferSelect
+export type NewWorkoutDayExercise = typeof workoutDayExercises.$inferInsert
+

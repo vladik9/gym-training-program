@@ -1,5 +1,5 @@
 import { db } from "./index"
-import { users, userProgress, workoutLogs, userPreferences, passwordResetTokens, exercises } from "./schema"
+import { users, userProgress, workoutLogs, userPreferences, passwordResetTokens, exercises, programs, weeks, workoutDays } from "./schema"
 import { eq, and, desc } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 
@@ -159,8 +159,69 @@ export async function getPasswordResetToken(token: string) {
   return resetToken
 }
 
+// Exercise queries
 export async function deletePasswordResetToken(token: string) {
   await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, token))
+}
+
+// Program queries
+export async function getAllPrograms() {
+  return db.select().from(programs)
+}
+
+export async function getProgramById(id: number) {
+  const [program] = await db.select().from(programs).where(eq(programs.id, id))
+  return program
+}
+
+export async function getWeeksByProgramId(programId: number) {
+  return db.select().from(weeks).where(eq(weeks.programId, programId)).orderBy(weeks.weekNumber)
+}
+
+export async function getWeekById(id: number) {
+  const [week] = await db.select().from(weeks).where(eq(weeks.id, id))
+  return week
+}
+
+export async function getWeekByProgramIdAndWeekNumber(programId: number, weekNumber: number) {
+  const [week] = await db.select().from(weeks).where(and(eq(weeks.programId, programId), eq(weeks.weekNumber, weekNumber)))
+  return week
+}
+
+export async function getWorkoutDaysByWeekId(weekId: number) {
+  return db.select().from(workoutDays).where(eq(workoutDays.weekId, weekId)).orderBy(workoutDays.id)
+}
+
+export async function getWorkoutDayById(id: number) {
+  const [workoutDay] = await db.select().from(workoutDays).where(eq(workoutDays.id, id))
+  return workoutDay
+}
+
+export async function getWorkoutDayByWeekIdAndDayName(weekId: number, dayName: string) {
+  const [workoutDay] = await db.select().from(workoutDays).where(and(eq(workoutDays.weekId, weekId), eq(workoutDays.dayName, dayName)))
+  return workoutDay
+}
+
+export async function getExercisesForWorkoutDay(workoutDayId: number) {
+  return db.select({
+    id: exercises.id,
+    name: exercises.name,
+    sets: workoutDayExercises.sets,
+    notes: workoutDayExercises.notes,
+    category: exercises.category,
+    equipment: exercises.equipment,
+    difficulty: exercises.difficulty,
+    description: exercises.description,
+    instructions: exercises.instructions,
+    musclesWorked: exercises.musclesWorked,
+    videoUrl: exercises.videoUrl,
+    gifUrl: exercises.gifUrl,
+    tips: exercises.tips,
+  })
+  .from(workoutDayExercises)
+  .innerJoin(exercises, eq(workoutDayExercises.exerciseId, exercises.id))
+  .where(eq(workoutDayExercises.workoutDayId, workoutDayId))
+  .orderBy(workoutDayExercises.order)
 }
 
 // Exercise queries
@@ -179,4 +240,18 @@ export async function getExercisesByCategory(category: string) {
 
 export async function searchExercises(searchTerm: string) {
   return db.select().from(exercises)
+}
+
+export async function createExercise(newExercise: NewExercise) {
+  const [exercise] = await db.insert(exercises).values(newExercise).returning()
+  return exercise
+}
+
+export async function updateExercise(id: number, updatedExercise: Partial<NewExercise>) {
+  const [exercise] = await db.update(exercises).set(updatedExercise).where(eq(exercises.id, id)).returning()
+  return exercise
+}
+
+export async function deleteExercise(id: number) {
+  await db.delete(exercises).where(eq(exercises.id, id))
 }
