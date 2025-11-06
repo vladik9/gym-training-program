@@ -145,5 +145,5 @@ This project is licensed under the MIT License.
 
 
 <div align="center">
-  <img src="./public/images/mobile.gif" alt="Description" width="400"/>
+  <img src="./public/images/mac.gif" alt="Description" width="400"/>
 </div>
