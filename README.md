@@ -1,3 +1,8 @@
+<div align="center">
+  <img src="./public/images/mobile.gif" alt="Description" width="400"/>
+</div>
+
+
 # Gym App
 
 ## Project Title & Description
@@ -56,6 +61,7 @@ This project uses SQLite as its database and Drizzle ORM for database interactio
 
 1. **Initialize the database and seed exercises:**
    The database tables are initialized when the application starts. To populate the `exercises` table with the workout program data, run the seeding script:
+
    ```bash
    npx ts-node scripts/seed-exercises.ts
    ```
@@ -133,3 +139,11 @@ Contributions are welcome! Please feel free to open issues or submit pull reques
 ## License
 
 This project is licensed under the MIT License.
+
+## Project images
+
+
+
+<div align="center">
+  <img src="./public/images/mobile.gif" alt="Description" width="400"/>
+</div>
